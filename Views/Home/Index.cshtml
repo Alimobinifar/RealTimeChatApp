@@ -1,0 +1,115 @@
+﻿<div class="row">
+    <div class="col-md-8">
+        <input type="text" id="userInput" placeholder="Name" class="form-control mb-2" />
+        <input type="text" id="messageInput" placeholder="Message" class="form-control mb-2" />
+
+        <button onclick="startConnection()" class="btn btn-success mb-2">Connect</button>
+        <button onclick="sendMessage()" class="btn btn-primary mb-2">Send Public</button>
+        <button onclick="sendPrivate()" class="btn btn-warning mb-2">Send Private</button>
+
+        <h4>Messages</h4>
+        <ul id="messagesList" class="list-group mt-2"></ul>
+    </div>
+
+    <div class="col-md-4">
+        <h4>Online Users</h4>
+        <ul id="usersList" class="list-group"></ul>
+
+        <h4 class="mt-4">Groups</h4>
+        <input type="text" id="groupInput" placeholder="Group Name" class="form-control mb-2" />
+        <button onclick="joinGroup()" class="btn btn-info mb-1">Join Group</button>
+        <button onclick="leaveGroup()" class="btn btn-secondary mb-2">Leave Group</button>
+        <button onclick="sendToGroup()" class="btn btn-dark">Send To Group</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        let connection;
+
+        function startConnection() {
+            const user = document.getElementById("userInput").value || "Guest";
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chatHub?user=" + encodeURIComponent(user))
+                .build();
+
+            connection.on("ReceiveMessage", (user, message) => {
+                addMessage(`${user}: ${message}`);
+            });
+
+            connection.on("ReceivePrivateMessage", (fromUser, message) => {
+                addMessage(`(Private) ${fromUser}: ${message}`);
+            });
+
+            connection.on("UpdateUsers", (users) => {
+                const usersList = document.getElementById("usersList");
+                usersList.innerHTML = "";
+                users.forEach(u => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item";
+                    li.textContent = u;
+                    usersList.appendChild(li);
+                });
+            });
+
+            // 👇 اینجا اضافه کن
+            connection.on("LoadHistory", (messages) => {
+                const list = document.getElementById("messagesList");
+                list.innerHTML = "";
+                messages.forEach(m => {
+                    addMessage(`${m.user}: ${m.message}`);
+                });
+            });
+
+            connection.start()
+                .catch(err => console.error(err.toString()));
+        }
+
+
+        function sendMessage() {
+            const user = document.getElementById("userInput").value;
+            const message = document.getElementById("messageInput").value;
+            connection.invoke("SendMessage", user, message);
+        }
+
+        function sendPrivate() {
+            const toUser = prompt("Enter recipient username:");
+            const fromUser = document.getElementById("userInput").value;
+            const message = document.getElementById("messageInput").value;
+            connection.invoke("SendPrivateMessage", toUser, fromUser, message);
+        }
+
+        function joinGroup() {
+            const group = document.getElementById("groupInput").value;
+            connection.invoke("JoinGroup", group);
+        }
+
+        function leaveGroup() {
+            const group = document.getElementById("groupInput").value;
+            connection.invoke("LeaveGroup", group);
+        }
+
+        function sendToGroup() {
+            const group = document.getElementById("groupInput").value;
+            const user = document.getElementById("userInput").value;
+            const message = document.getElementById("messageInput").value;
+            connection.invoke("SendMessageToGroup", group, user, message);
+        }
+
+        function addMessage(text) {
+            const li = document.createElement("li");
+            li.className = "list-group-item";
+            li.textContent = text;
+            document.getElementById("messagesList").appendChild(li);
+        }
+        connection.on("LoadHistory", (messages) => {
+            const list = document.getElementById("messagesList");
+            list.innerHTML = "";
+            messages.forEach(m => {
+                addMessage(`${m.user}: ${m.message}`);
+            });
+        });
+
+    </script>
+}
