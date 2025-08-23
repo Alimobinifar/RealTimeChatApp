@@ -10,6 +10,36 @@
 *.userosscache
 *.sln.docstates
 
+# Build folders
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio folder
+.vs/
+
+# Logs and temp
+*.log
+*.tlog
+*.tmp
+
+# Publish outputs
+publish/
+out/
+
+# Dependency folders
+node_modules/
+packages/
+
+# Secrets
+appsettings.Development.json
+
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
